@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>롯데몰 동부산점 - 식품위생 건강 관리 플랫폼</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (Excel Download) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        lotte: {
+                            red: '#E30613',
+                            redDark: '#C1000B',
+                            redLight: '#FFEBEC',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Soft animation */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- [APP CONTAINER] Responsive Layout -->
+    <div id="app" class="w-full max-w-6xl mx-auto min-h-screen bg-white shadow-2xl flex flex-col justify-between transition-all duration-300">
+        
+        <!-- 상단 헤더 -->
+        <header class="bg-white border-b border-slate-100 p-4 sticky top-0 z-50 flex justify-between items-center shadow-sm">
+            <div class="flex items-center space-x-3">
+                <div class="w-3.5 h-7 bg-lotte-red bg-[#E30613] rounded-sm"></div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-slate-900 flex items-center font-outfit">
+                        LOTTE MALL <span class="ml-2 px-2 py-0.5 bg-red-50 text-[#E30613] text-xs font-bold rounded-md font-sans">동부산점 식당가</span>
+                    </h1>
+                    <p class="text-[10px] text-slate-400 font-medium">식품위생 건강 관리 통합 모니터링 & AI 자동 마스킹 관리 플랫폼</p>
+                </div>
+            </div>
+            <button id="logoutBtn" class="hidden text-sm text-slate-500 hover:text-slate-800 flex items-center space-x-1 transition font-medium">
+                <i data-lucide="log-out" class="w-4 h-4"></i> <span>로그아웃</span>
+            </button>
+        </header>
+
+        <!-- 메인 콘텐츠 영역 (동적 라우팅 전환) -->
+        <main id="main-content" class="flex-1 p-4 md:p-8">
+            <!-- JavaScript가 이곳에 각 화면 템플릿을 렌더링합니다. -->
+        </main>
+
+        <!-- 푸터 -->
+        <footer class="text-center py-6 text-xs text-slate-400 border-t border-slate-50 bg-slate-50/50">
+            <p class="font-medium text-slate-500">© 2026 Lotte Mall Dongbusan Food Court Care. All Rights Reserved.</p>
+            <p class="text-[10px] text-slate-400 mt-1">본 시스템은 개인정보보호법 가이드라인에 따라 주민등록번호 뒷자리를 엄격히 암호화 및 비수집 처리합니다.</p>
+        </footer>
+    </div>
+
+    <!-- [IMAGE VIEW MODAL] 보건증 원본 미리보기용 모달 (관리자 전용) -->
+    <div id="imageModal" class="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center hidden p-4 fade-in">
+        <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col">
+            <div class="bg-slate-900 text-white p-5 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="shield-check" class="text-emerald-400 w-5 h-5"></i>
+                    <span class="font-bold text-sm">보건증 원본 증명서 (보안 검증 필)</span>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[70vh]">
+                <!-- 가상 보건증 문서 디자인 -->
+                <div id="certDocument" class="border-2 border-double border-slate-300 p-6 bg-stone-50 rounded-xl relative shadow-inner text-xs text-slate-700 space-y-4">
+                    <!-- 위변조 방지 워터마크 마크업 -->
+                    <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none select-none">
+                        <span class="text-5xl font-black rotate-12 tracking-widest text-[#E30613]">LOTTE MALL</span>
+                    </div>
+
+                    <div class="text-center space-y-1">
+                        <h3 class="text-lg font-black tracking-widest text-slate-900 underline decoration-double underline-offset-4">건강진단결과서 (보건증)</h3>
+                        <p class="text-[9px] text-slate-400">식품위생법 제49조 및 동법 시행규칙 제49조 규정에 의함</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mt-6 border-t border-b border-slate-300 py-4">
+                        <p><strong>성 명:</strong> <span id="modalName" class="font-bold text-slate-900"></span></p>
+                        <p><strong>주민등록번호:</strong> <span id="modalRrn" class="font-bold text-slate-900 font-mono"></span></p>
+                        <p><strong>브랜드:</strong> <span id="modalBrand" class="font-medium text-slate-800"></span></p>
+                        <p><strong>직 책:</strong> <span id="modalRole" class="font-medium text-slate-800"></span></p>
+                        <p><strong>성 별:</strong> <span id="modalGender" class="text-slate-700"></span></p>
+                        <p><strong>판정결과:</strong> <span id="modalResult" class="font-bold text-emerald-600"></span></p>
+                    </div>
+
+                    <div class="space-y-2 py-2">
+                        <div class="flex justify-between border-b border-dashed border-slate-200 pb-1">
+                            <span>장티푸스 검사:</span> <span class="font-bold text-slate-900">정상 (음성)</span>
+                        </div>
+                        <div class="flex justify-between border-b border-dashed border-slate-200 pb-1">
+                            <span>폐결핵 (흉부엑스선):</span> <span class="font-bold text-slate-900">정상 (완쾌/유소견없음)</span>
+                        </div>
+                        <div class="flex justify-between border-b border-dashed border-slate-200 pb-1">
+                            <span>전염성 피부질환:</span> <span class="font-bold text-slate-900">정상 (음성)</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-red-50 border border-red-200 p-3 rounded-lg text-[10px] text-red-700 space-y-1">
+                        <p class="font-bold flex items-center"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1"></i> 개인정보보호 조치 안내</p>
+                        <p>주민등록번호의 뒷자리는 최초 OCR 추출 단계부터 마스킹(뒷자리 제거 및 ****** 대체) 처리되어 데이터베이스에 전혀 기록되지 않았습니다.</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-500 pt-4">
+                        <p><strong>진단일자:</strong> <span id="modalDiagDate" class="font-mono text-slate-800 font-bold"></span></p>
+                        <p><strong>판정만료일:</strong> <span id="modalExpiryDate" class="font-mono text-slate-800 font-bold text-red-600"></span></p>
+                    </div>
+
+                    <div class="text-center pt-6 relative">
+                        <p class="text-sm font-bold text-slate-800 tracking-wider">롯데몰 동부산점 위생안전본부</p>
+                        <div class="absolute right-4 bottom-2 opacity-80 border-2 border-red-500 text-red-500 rounded-full w-12 h-12 flex items-center justify-center text-[10px] font-black rotate-12">
+                            검인필
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-50 p-4 border-t border-slate-100 flex justify-end">
+                <button onclick="closeModal()" class="bg-slate-900 text-white text-sm font-bold px-6 py-2 rounded-xl hover:bg-slate-800 transition">확인 완료</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- [APPLICATION SCRIPT] -->
+    <script>
+        /**
+         * ==========================================
+         * 1. 초기 상태 정의 및 데이터 관리 (LocalStorage 연동)
+         * ==========================================
+         */
+        let currentView = 'login';
+        let adminPassword = localStorage.getItem('lotte_admin_password') || "2606";
+        
+        // 초기 브랜드 기본 목록
+        const defaultBrands = ["풍원장", "정예담", "호린옥", "서리재", "매드포갈릭", "두끼", "아웃백스테이크", "남포수제비", "미스터시래기"];
+        
+        // 초기 가상 임직원 보건증 목록
+        const defaultStaffData = [
+            { id: 1, brand: "풍원장", name: "김민재", role: "아르바이트", gender: "남", rrn: "020814-3******", result: "정상(적합)", regDate: "2025-08-14", expiryDate: "2026-08-14", isManual: false },
+            { id: 2, brand: "정예담", name: "이소연", role: "매니저", gender: "여", rrn: "950728-2******", result: "정상(적합)", regDate: "2025-07-28", expiryDate: "2026-07-28", isManual: false },
+            { id: 3, brand: "호린옥", name: "박지성", role: "대표(점주)", gender: "남", rrn: "780719-1******", result: "정상(적합)", regDate: "2025-07-19", expiryDate: "2026-07-19", isManual: false },
+            { id: 4, brand: "서리재", name: "최수지", role: "스탭", gender: "여", rrn: "990708-2******", result: "정상(적합)", regDate: "2025-07-08", expiryDate: "2026-07-08", isManual: false },
+            { id: 5, brand: "매드포갈릭", name: "정우성", role: "점장", gender: "남", rrn: "820620-1******", result: "정상(적합)", regDate: "2025-06-20", expiryDate: "2026-06-20", isManual: false },
+            { id: 6, brand: "두끼", name: "한지민", role: "아르바이트", gender: "여", rrn: "040515-4******", result: "정상(적합)", regDate: "2025-05-15", expiryDate: "2026-05-15", isManual: false }
+        ];
+
+        // 로컬스토리지에서 데이터를 읽어오거나 없으면 기본값으로 세팅
+        let brands = JSON.parse(localStorage.getItem('lotte_brands')) || defaultBrands;
+        let staffData = JSON.parse(localStorage.getItem('lotte_staff_data')) || defaultStaffData;
+
+        // 로컬스토리지 저장 헬퍼 함수
+        function saveToStorage() {
+            localStorage.setItem('lotte_brands', JSON.stringify(brands));
+            localStorage.setItem('lotte_staff_data', JSON.stringify(staffData));
+        }
+
+        // 검색, 필터, 정렬 설정값
+        let filters = {
+            searchBrand: '',
+            searchName: '',
+            status: '전체',
+            sort: '유효기간' // 유효기간 기본 정렬
+        };
+
+        // 직원용 화면 등록 폼 진행상태
+        let newStaffForm = {
+            brand: '',
+            role: '',
+            gender: '',
+            file: null,
+            ocrResult: null
+        };
+
+        // 차트 인스턴스 보관용 객체
+        let charts = {};
+
+        /**
+         * ==========================================
+         * 2. 유틸리티 함수 (D-Day 계산 및 주민번호 마스킹)
+         * ==========================================
+         */
+
+        // 만료일 기준 D-Day 계산 함수
+        function calculateDDay(expiryDateStr) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const expiry = new Date(expiryDateStr);
+            expiry.setHours(0, 0, 0, 0);
+            
+            const diffTime = expiry - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return { text: '만료', color: 'bg-slate-100 text-slate-600 border-slate-300', code: 'expired', level: 5 };
+            }
+            if (diffDays === 0) {
+                return { text: 'D-Day', color: 'bg-red-50 text-red-600 border-red-300 ring-2 ring-red-500/20', code: 'd0', level: 4 };
+            }
+            if (diffDays <= 7) {
+                return { text: `D-${diffDays}`, color: 'bg-red-100 text-red-700 border-red-200', code: 'd7', level: 3 };
+            }
+            if (diffDays <= 14) {
+                return { text: `D-${diffDays}`, color: 'bg-orange-100 text-orange-700 border-orange-200', code: 'd14', level: 2 };
+            }
+            if (diffDays <= 30) {
+                return { text: `D-${diffDays}`, color: 'bg-amber-100 text-amber-800 border-amber-200', code: 'd30', level: 1 };
+            }
+            return { text: `D-${diffDays}`, color: 'bg-emerald-50 text-emerald-700 border-emerald-200', code: 'normal', level: 0 };
+        }
+
+        // 주민번호 뒷자리 마스킹 처리기 (입력 단계 필터링)
+        // 980412-1234567 -> 980412-1****** (뒷자리는 절대로 DB 배열에 보관 및 저장하지 않음)
+        function sanitizeRrn(rawRrn) {
+            if (!rawRrn) return "";
+            const clean = rawRrn.replace(/[^0-9-]/g, ""); // 숫자와 하이픈만 추출
+            const parts = clean.split('-');
+            
+            if (parts.length >= 2) {
+                const front = parts[0].substring(0, 6);
+                const backFirst = parts[1].substring(0, 1); // 성별구분 첫자리만
+                return `${front}-${backFirst}******`;
+            } else if (clean.length > 6) {
+                const front = clean.substring(0, 6);
+                const backFirst = clean.substring(6, 7);
+                return `${front}-${backFirst}******`;
+            }
+            return clean;
+        }
+
+        // 관리자 비밀번호 변경 기능
+        function changeAdminPassword() {
+            const currentPwd = document.getElementById('currentPasswordInput').value.trim();
+            const newPwd = document.getElementById('newPasswordInput').value.trim();
+            const confirmPwd = document.getElementById('confirmPasswordInput').value.trim();
+
+            if (!currentPwd || !newPwd || !confirmPwd) {
+                alert("모든 비밀번호 필드를 입력해 주십시오.");
+                return;
+            }
+            if (currentPwd !== adminPassword) {
+                alert("현재 비밀번호가 일치하지 않습니다.");
+                return;
+            }
+            if (newPwd !== confirmPwd) {
+                alert("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
+                return;
+            }
+            if (newPwd.length < 4) {
+                alert("비밀번호는 최소 4자리 이상이어야 합니다.");
+                return;
+            }
+
+            adminPassword = newPwd;
+            localStorage.setItem('lotte_admin_password', adminPassword);
+            alert("관리자 비밀번호가 성공적으로 변경되었습니다.\n다음에 로그인 시 변경된 비밀번호를 사용하십시오.");
+            
+            // 입력창 초기화
+            document.getElementById('currentPasswordInput').value = "";
+            document.getElementById('newPasswordInput').value = "";
+            document.getElementById('confirmPasswordInput').value = "";
+        }
+
+        /**
+         * ==========================================
+         * 3. 뷰 렌더링 및 라우팅 컨트롤러 (SPA 구조)
+         * ==========================================
+         */
+        function router() {
+            const main = document.getElementById('main-content');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            // 화면 뷰에 따른 렌더링 분기
+            if (currentView === 'login') {
+                logoutBtn.classList.add('hidden');
+                renderLoginView(main);
+            } else if (currentView === 'staff_register') {
+                logoutBtn.classList.remove('hidden');
+                renderStaffRegisterView(main);
+            } else if (currentView === 'admin_dashboard') {
+                logoutBtn.classList.remove('hidden');
+                renderAdminDashboardView(main);
+            }
+            
+            // Lucide 아이콘 새로 그리기
+            lucide.createIcons();
+            // 화면 최상단 스크롤
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 3-1. 로그인 화면 렌더링
+        function renderLoginView(container) {
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-10 md:py-16 max-w-md mx-auto fade-in">
+                    <div class="text-center mb-10">
+                        <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100 shadow-sm">
+                            <i data-lucide="shield-check" class="w-10 h-10 text-[#E30613]"></i>
+                        </div>
+                        <h2 class="text-2xl font-black text-slate-900 tracking-tight">식품위생 건강 관리 플랫폼</h2>
+                        <p class="text-xs text-slate-500 mt-2 font-medium">안전하고 투명한 식당가 위생 관리를 위한 첫 단계</p>
+                    </div>
+
+                    <div class="w-full space-y-6">
+                        <!-- 직원용 보건증 등록 버튼 -->
+                        <button onclick="currentView='staff_register'; router();" 
+                            class="w-full bg-[#E30613] hover:bg-[#C1000B] text-white font-bold p-6 rounded-2xl shadow-lg transition duration-300 flex flex-col items-center justify-center space-y-2 group transform hover:-translate-y-0.5">
+                            <i data-lucide="camera" class="w-7 h-7 text-white group-hover:scale-110 transition"></i>
+                            <span class="text-base font-extrabold tracking-wide">식당가 직원용 보건증 등록</span>
+                            <span class="text-[11px] font-medium text-red-100">간편하게 사진을 찍어 보건증 정보를 등록하세요</span>
+                        </button>
+
+                        <div class="relative flex py-3 items-center">
+                            <div class="flex-grow border-t border-slate-200"></div>
+                            <span class="flex-shrink mx-4 text-slate-400 text-xs font-semibold">또는</span>
+                            <div class="flex-grow border-t border-slate-200"></div>
+                        </div>
+
+                        <!-- 관리자 로그인 폼 -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="lock" class="w-4 h-4 text-[#E30613]"></i>
+                                <span class="text-xs font-bold text-slate-700 tracking-wider">위생 관리자 로그인</span>
+                            </div>
+                            <div class="flex space-x-2">
+                                <div class="relative flex-1">
+                                    <input type="password" id="adminPwdInput" placeholder="관리자 비밀번호" 
+                                        onkeydown="if(event.key==='Enter') handleAdminLogin()"
+                                        class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3 pr-8 py-3 text-sm focus:outline-none focus:bg-white focus:border-[#E30613] focus:ring-1 focus:ring-[#E30613] font-mono tracking-widest">
+                                </div>
+                                <button onclick="handleAdminLogin()" 
+                                    class="bg-slate-900 text-white text-sm font-bold px-6 py-3 rounded-xl hover:bg-slate-800 transition">
+                                    접속
+                                </button>
+                            </div>
+                            <p id="loginError" class="text-xs text-red-500 font-semibold hidden flex items-center">
+                                <i data-lucide="alert-circle" class="w-3.5 h-3.5 mr-1"></i> 비밀번호가 틀렸습니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 3-2. 관리자 로그인 처리
+        function handleAdminLogin() {
+            const input = document.getElementById('adminPwdInput').value;
+            if (input === adminPassword) {
+                currentView = 'admin_dashboard';
+                router();
+                
+                // 로그인 직후 만료예정자(30일 이내 또는 만료)가 있으면 경고 알림 팝업
+                setTimeout(() => {
+                    const alertList = staffData.filter(d => {
+                        const dday = calculateDDay(d.expiryDate);
+                        return ['expired', 'd0', 'd7', 'd14', 'd30'].includes(dday.code);
+                    });
+                    if (alertList.length > 0) {
+                        alert(`[식품위생 자동 경고]\n\n현재 만료되었거나 30일 이내에 만료 예정인 보건증이 총 ${alertList.length}건 감지되었습니다.\n대시보드 리스트에서 만료 대상자를 확인한 뒤 갱신을 독려하십시오.`);
+                    }
+                }, 300);
+            } else {
+                const err = document.getElementById('loginError');
+                if (err) err.classList.remove('hidden');
+            }
+        }
+
+        // 3-3. 직원용 등록 폼 화면 렌더링
+        function renderStaffRegisterView(container) {
+            container.innerHTML = `
+                <div class="max-w-xl mx-auto space-y-6 fade-in">
+                    <div class="flex items-center justify-between text-slate-500 text-sm mb-4">
+                        <button onclick="currentView='login'; router();" class="hover:text-slate-800 flex items-center font-semibold transition">
+                            <i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i> 처음 화면으로
+                        </button>
+                        <span class="text-xs text-slate-400 font-semibold">직원 등록 모드</span>
+                    </div>
+
+                    <div class="bg-white rounded-3xl border border-slate-100 p-6 md:p-8 shadow-xl space-y-6">
+                        <div class="border-b border-slate-100 pb-4">
+                            <h3 class="text-xl font-extrabold text-slate-900 flex items-center space-x-2">
+                                <i data-lucide="file-plus-2" class="text-[#E30613]"></i>
+                                <span>식품위생 보건증 간편 등록</span>
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-1 font-medium">카메라 촬영 또는 사진 업로드 시 AI가 정보를 자동으로 판독합니다.</p>
+                        </div>
+
+                        <!-- 1단계: 매장 브랜드 선택 -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-600 tracking-wider">1. 식당가 브랜드 (매장명)</label>
+                            <input type="text" list="brandList" id="staffBrand" placeholder="소속 브랜드를 검색하거나 선택하세요" autocomplete="off" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:bg-white focus:border-[#E30613] font-medium">
+                            <datalist id="brandList">
+                                ${[...brands].sort((a, b) => a.localeCompare(b, 'ko')).map(b => `<option value="${b}">`).join('')}
+                            </datalist>
+                        </div>
+
+                        <!-- 2단계: 직책 선택 -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-600 tracking-wider">2. 근무자 직책</label>
+                            <select id="staffRole" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:bg-white focus:border-[#E30613] font-medium">
+                                <option value="">직책을 선택하세요</option>
+                                <option value="대표(점주)">대표(점주)</option>
+                                <option value="점장">점장</option>
+                                <option value="매니저">매니저</option>
+                                <option value="스탭">스탭</option>
+                                <option value="아르바이트">아르바이트</option>
+                            </select>
+                        </div>
+
+                        <!-- 3단계: 성별 선택 -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-600 tracking-wider">3. 근무자 성별</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" onclick="setGender('남', this)" class="gender-btn border border-slate-200 rounded-xl py-3 text-sm font-bold bg-slate-50 hover:bg-slate-100 transition">남성</button>
+                                <button type="button" onclick="setGender('여', this)" class="gender-btn border border-slate-200 rounded-xl py-3 text-sm font-bold bg-slate-50 hover:bg-slate-100 transition">여성</button>
+                            </div>
+                        </div>
+
+                        <!-- 4단계: 파일/사진 선택 -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-600 tracking-wider">4. 보건증 사진 촬영 및 업로드</label>
+                            <div class="relative border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center space-y-2">
+                                <input type="file" id="staffFile" accept=".jpg,.jpeg,.png,.pdf" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFileSelected(this)">
+                                <div id="uploadPlaceholder" class="space-y-2">
+                                    <div class="w-12 h-12 bg-red-50 text-[#E30613] rounded-full flex items-center justify-center mx-auto">
+                                        <i data-lucide="aperture" class="w-6 h-6 animate-pulse"></i>
+                                    </div>
+                                    <p class="text-xs font-bold text-slate-700">모바일에서 촬영하거나 파일 선택</p>
+                                    <p class="text-[10px] text-slate-400">지원파일: JPG, JPEG, PNG, PDF</p>
+                                </div>
+                                <div id="fileNameDisplay" class="hidden text-sm font-bold text-emerald-600 flex items-center">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 mr-1"></i> <span id="uploadedFileName"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI OCR 분석 중 로딩 바 애니메이션 -->
+                        <div id="ocrLoading" class="hidden space-y-2 bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-[#E30613] flex items-center">
+                                    <i data-lucide="cpu" class="w-4 h-4 mr-1 animate-spin"></i> AI OCR 정밀 위생분석 및 주민번호 마스킹 처리 중...
+                                </span>
+                                <span id="ocrProgressText" class="font-mono font-bold text-slate-600">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2">
+                                <div id="ocrProgressBar" class="bg-[#E30613] h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- 5단계: AI OCR 분석 가상 결과 미리보기 및 수정 가능한 최종 점검 양식 -->
+                        <div id="ocrResultContainer" class="hidden bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-4">
+                            <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                                <span class="text-xs font-bold text-emerald-700 flex items-center">
+                                    <i data-lucide="sparkles" class="w-4 h-4 mr-1"></i> AI OCR 자동 추출 완료 (정보 확인 및 오류 교정)
+                                </span>
+                                <span class="text-[9px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-black">정확도 99.8%</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                <div class="space-y-1">
+                                    <label class="block font-bold text-slate-600">이름</label>
+                                    <input type="text" id="ocrName" class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-sm font-semibold focus:outline-none focus:border-[#E30613]">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="block font-bold text-slate-600">주민등록번호 <span class="text-[10px] text-red-500 font-semibold">(뒷자리 입력 불가/마스킹)</span></label>
+                                    <input type="text" id="ocrRrn" placeholder="예: 980412-1" 
+                                        oninput="this.value = sanitizeRrn(this.value)" 
+                                        class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-sm font-mono font-bold focus:outline-none focus:border-[#E30613]">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="block font-bold text-slate-600">진단 일자 (보건소 진단일 기준)</label>
+                                    <input type="date" id="ocrDiagDate" onchange="updateOcrExpiryDate(this.value)" class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-sm font-bold focus:outline-none focus:border-[#E30613]">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="block font-bold text-slate-600">판정 결과</label>
+                                    <select id="ocrResultVal" class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-sm font-semibold focus:outline-none focus:border-[#E30613]">
+                                        <option value="정상(적합)">정상 (적합)</option>
+                                        <option value="정밀검사 요함">정밀검사 요함 (부적합)</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-1 md:col-span-2">
+                                    <label class="block font-bold text-slate-600">보건증 만료 예정일 <span class="text-[10px] text-slate-400 font-medium">(진단일 기준 1년 자동 계산)</span></label>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="date" id="ocrExpiry" readonly class="flex-1 bg-slate-100 border border-slate-200 rounded-xl p-2.5 text-sm font-bold text-[#E30613] focus:outline-none">
+                                        <span id="ocrDdayBadge" class="px-3 py-2 border rounded-xl text-xs font-black"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 최종 등록 단추 -->
+                        <button onclick="submitStaffData()" 
+                            class="w-full bg-[#E30613] text-white font-bold p-4 rounded-xl shadow-md hover:bg-[#C1000B] transition flex items-center justify-center space-x-2">
+                            <i data-lucide="check-circle-2"></i> <span>제출 및 보건증 등록 완료</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 성별 선택 값 주입
+        function setGender(gender, btn) {
+            newStaffForm.gender = gender;
+            const buttons = document.querySelectorAll('.gender-btn');
+            buttons.forEach(b => {
+                b.classList.remove('bg-[#E30613]', 'text-white', 'border-[#E30613]');
+                b.classList.add('bg-slate-50', 'text-slate-800', 'border-slate-200');
+            });
+            btn.classList.add('bg-[#E30613]', 'text-white', 'border-[#E30613]');
+            btn.classList.remove('bg-slate-50', 'text-slate-800', 'border-slate-200');
+        }
+
+        // 진단일자 입력 시 자동으로 만료일(1년 후 하루 전) 계산
+        function updateOcrExpiryDate(diagDateStr) {
+            if (!diagDateStr) return;
+            const diag = new Date(diagDateStr);
+            const expiry = new Date(diag);
+            expiry.setFullYear(diag.getFullYear() + 1);
+            expiry.setDate(diag.getDate() - 1); // 1년 만료일 자동 연산
+            
+            const expiryStr = expiry.toISOString().split('T')[0];
+            document.getElementById('ocrExpiry').value = expiryStr;
+            
+            // D-day 뱃지 실시간 연동
+            const dday = calculateDDay(expiryStr);
+            const badge = document.getElementById('ocrDdayBadge');
+            badge.innerText = dday.text;
+            badge.className = `px-3 py-2 border rounded-xl text-xs font-black ${dday.color}`;
+        }
+
+        // 파일 업로드 시 가상 AI OCR 연동 동작
+        function handleFileSelected(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+                document.getElementById('uploadedFileName').innerText = file.name;
+                document.getElementById('fileNameDisplay').classList.remove('hidden');
+
+                newStaffForm.file = file;
+
+                // AI OCR 정밀 판독 애니메이션 시뮬레이션
+                const loadingSection = document.getElementById('ocrLoading');
+                const progressText = document.getElementById('ocrProgressText');
+                const progressBar = document.getElementById('ocrProgressBar');
+                
+                loadingSection.classList.remove('hidden');
+                document.getElementById('ocrResultContainer').classList.add('hidden');
+                
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    progressBar.style.width = `${progress}%`;
+                    progressText.innerText = `${progress}%`;
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            loadingSection.classList.add('hidden');
+                            showOcrMockResult();
+                        }, 300);
+                    }
+                }, 150);
+            }
+        }
+
+        // 가상 AI OCR 데이터 매핑 시뮬레이션
+        function showOcrMockResult() {
+            // 랜덤 예시용 임직원 이름
+            const mockNames = ["박보검", "아이유", "송중기", "김지원", "공유", "한소희", "정해인"];
+            const randomName = mockNames[Math.floor(Math.random() * mockNames.length)];
+            
+            // 랜덤 주민번호 앞자리 + 뒷자리 첫자리
+            const randomRrnFront = String(Math.floor(Math.random() * 40) + 70).padStart(2, '0') + 
+                                   String(Math.floor(Math.random() * 11) + 1).padStart(2, '0') + 
+                                   String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
+            const randomGenderCode = Math.floor(Math.random() * 2) + 1; // 1 or 2
+            const mockRrn = `${randomRrnFront}-${randomGenderCode}******`; // 마스킹 포맷
+
+            // 현재 날짜 기준 랜덤한 진단일자 설정 (최근 한 달 이내)
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() - Math.floor(Math.random() * 20)); 
+            const diagString = targetDate.toISOString().split('T')[0];
+
+            newStaffForm.ocrResult = {
+                name: randomName,
+                rrn: mockRrn,
+                diagDate: diagString,
+                result: "정상(적합)"
+            };
+
+            // 양식 폼에 값 채워넣기
+            document.getElementById('ocrName').value = newStaffForm.ocrResult.name;
+            document.getElementById('ocrRrn').value = newStaffForm.ocrResult.rrn;
+            document.getElementById('ocrDiagDate').value = newStaffForm.ocrResult.diagDate;
+            document.getElementById('ocrResultVal').value = newStaffForm.ocrResult.result;
+            
+            // 만료예정일 계산 실행
+            updateOcrExpiryDate(diagString);
+
+            // 결과 화면 드러내기
+            document.getElementById('ocrResultContainer').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        // 직원 정보 등록 완료 처리
+        function submitStaffData() {
+            const brand = document.getElementById('staffBrand').value;
+            const role = document.getElementById('staffRole').value;
+            
+            // OCR 결과에서 수정된 값 가져오기
+            const name = document.getElementById('ocrName') ? document.getElementById('ocrName').value.trim() : "";
+            const rrn = document.getElementById('ocrRrn') ? document.getElementById('ocrRrn').value.trim() : "";
+            const diagDate = document.getElementById('ocrDiagDate') ? document.getElementById('ocrDiagDate').value : "";
+            const expiryDate = document.getElementById('ocrExpiry') ? document.getElementById('ocrExpiry').value : "";
+            const result = document.getElementById('ocrResultVal') ? document.getElementById('ocrResultVal').value : "";
+
+            if (!brand) {
+                alert("소속 브랜드를 선택해 주십시오.");
+                return;
+            }
+            if (!role) {
+                alert("근무자 직책을 선택해 주십시오.");
+                return;
+            }
+            if (!newStaffForm.gender) {
+                alert("근무자 성별을 선택해 주십시오.");
+                return;
+            }
+            if (!newStaffForm.file) {
+                alert("보건증 사진 파일을 등록(촬영)해 주십시오.");
+                return;
+            }
+            if (!name || !rrn || !diagDate || !expiryDate) {
+                alert("AI OCR 검출 내용이 올바르지 않습니다. 양식을 확인해 주십시오.");
+                return;
+            }
+
+            // 주민등록번호 뒷자리 절대 미저장 및 강제 마스킹 검증
+            const maskedRrn = sanitizeRrn(rrn);
+
+            // 신규 보건증 데이터 객체화
+            const newRecord = {
+                id: Date.now(), // 고유 ID 부여
+                brand: brand,
+                name: name,
+                role: role,
+                gender: newStaffForm.gender,
+                rrn: maskedRrn, // 뒷자리 완전 제거된 마스킹 주민번호만 수집
+                result: result,
+                regDate: diagDate, // 진단일자
+                expiryDate: expiryDate, // 만료일자
+                isManual: true
+            };
+
+            // 목록 배열의 맨 앞에 삽입
+            staffData.unshift(newRecord);
+            saveToStorage();
+
+            alert(`[등록 완료]\n\n${brand} 소속 ${name} 님의 보건증이 완벽히 등록되었습니다.\n(주민번호 뒷자리는 즉시 삭제되었으며 앞자리 및 성별 코드만 안전히 마스킹되어 보관됩니다.)`);
+            
+            // 등록 폼 초기화 및 로그인 홈 화면 복귀
+            newStaffForm = { brand: '', role: '', gender: '', file: null, ocrResult: null };
+            currentView = 'login';
+            router();
+        }
+
+        // 3-4. 관리자 종합 대시보드 화면 렌더링
+        function renderAdminDashboardView(container) {
+            // 통계 계산
+            const total = staffData.length;
+            
+            let recentCount = 0; 
+            let expiredCount = 0; 
+            let d30Count = 0; 
+            let d7Count = 0;
+
+            const today = new Date();
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(today.getMonth() - 1);
+
+            staffData.forEach(item => {
+                // 최근 한 달 이내 등록 추이
+                if (new Date(item.regDate) >= oneMonthAgo) recentCount++;
+                
+                // 만료일 기준 카운팅
+                const dday = calculateDDay(item.expiryDate);
+                if (dday.code === 'expired') {
+                    expiredCount++;
+                } else if (dday.code === 'd7' || dday.code === 'd0') {
+                    d7Count++;
+                } else if (dday.code === 'd14' || dday.code === 'd30') {
+                    d30Count++;
+                }
+            });
+
+            // 필터링 및 검색, 정렬 연산
+            let processedList = [...staffData];
+
+            // 브랜드 검색
+            if (filters.searchBrand) {
+                processedList = processedList.filter(d => d.brand.toLowerCase().includes(filters.searchBrand.toLowerCase()));
+            }
+            // 이름 검색
+            if (filters.searchName) {
+                processedList = processedList.filter(d => d.name.toLowerCase().includes(filters.searchName.toLowerCase()));
+            }
+            // 상태별 라디오 필터 (정상, 만료예정, 만료)
+            if (filters.status !== '전체') {
+                processedList = processedList.filter(d => {
+                    const dday = calculateDDay(d.expiryDate);
+                    if (filters.status === '정상') return dday.code === 'normal';
+                    if (filters.status === '만료예정') return ['d0', 'd7', 'd14', 'd30'].includes(dday.code);
+                    if (filters.status === '만료') return dday.code === 'expired';
+                });
+            }
+
+            // 정렬 기준
+            if (filters.sort === '브랜드') {
+                processedList.sort((a, b) => a.brand.localeCompare(b.brand, 'ko'));
+            } else if (filters.sort === '이름') {
+                processedList.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+            } else if (filters.sort === '등록일') {
+                processedList.sort((a, b) => new Date(b.regDate) - new Date(a.regDate));
+            } else if (filters.sort === '유효기간') {
+                processedList.sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+            }
+
+            container.innerHTML = `
+                <div class="space-y-8 fade-in">
+                    
+                    <!-- 브랜드 신속 편집 & 비밀번호 변경 관리 그리드 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <!-- 브랜드 신속 편집 섹션 -->
+                        <div class="lg:col-span-2 bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-sm">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold text-slate-700 flex items-center font-bold">
+                                    <i data-lucide="store" class="w-4 h-4 mr-1 text-[#E30613]"></i> 식당가 브랜드 실시간 편집 (현재 ${brands.length}개):
+                                </span>
+                            </div>
+                            <div class="flex flex-wrap gap-1 max-h-20 overflow-y-auto py-1">
+                                ${brands.map(b => `
+                                    <span class="inline-flex items-center text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 font-bold shadow-xs">
+                                        ${b} 
+                                        <button onclick="deleteBrand('${b}')" class="text-slate-400 hover:text-red-500 font-black ml-1.5 transition">×</button>
+                                    </span>
+                                `).join('')}
+                            </div>
+                            <div class="flex space-x-1.5 w-full mt-1">
+                                <input type="text" id="newBrandInput" placeholder="추가할 브랜드명" 
+                                    class="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-[#E30613]">
+                                <button onclick="addBrand()" class="bg-slate-900 text-white font-bold text-xs px-4 py-1.5 rounded-xl hover:bg-slate-800 transition shadow-sm">
+                                    추가
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 관리자 비밀번호 변경 설정 -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-sm">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold text-slate-700 flex items-center font-bold">
+                                    <i data-lucide="key-round" class="w-4 h-4 mr-1 text-[#E30613]"></i> 관리자 비밀번호 변경:
+                                </span>
+                            </div>
+                            <div class="space-y-1">
+                                <input type="password" id="currentPasswordInput" placeholder="현재 비밀번호" 
+                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-[#E30613]">
+                                <div class="flex space-x-1">
+                                    <input type="password" id="newPasswordInput" placeholder="새 비밀번호" 
+                                        class="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-[#E30613]">
+                                    <input type="password" id="confirmPasswordInput" placeholder="비밀번호 확인" 
+                                        class="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-[#E30613]">
+                                </div>
+                            </div>
+                            <button onclick="changeAdminPassword()" class="w-full bg-[#E30613] hover:bg-[#C1000B] text-white font-bold text-xs py-2 rounded-xl transition shadow-sm mt-1">
+                                비밀번호 변경 적용
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 상단 핵심 현황 지표 카드 -->
+                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition">
+                            <p class="text-xs font-bold text-slate-400 flex items-center"><i data-lucide="users" class="w-3.5 h-3.5 mr-1 text-slate-400"></i> 총 등록 근무자</p>
+                            <p class="text-3xl font-black mt-2 text-slate-950">${total}명</p>
+                        </div>
+                        <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition">
+                            <p class="text-xs font-bold text-slate-400 flex items-center"><i data-lucide="plus-circle" class="w-3.5 h-3.5 mr-1 text-blue-500"></i> 최근 한달 등록</p>
+                            <p class="text-3xl font-black mt-2 text-blue-600">${recentCount}건</p>
+                        </div>
+                        <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition border-l-4 border-l-red-500">
+                            <p class="text-xs font-bold text-slate-400 flex items-center"><i data-lucide="alert-circle" class="w-3.5 h-3.5 mr-1 text-red-500 animate-bounce"></i> 7일 이내/만료당일</p>
+                            <p class="text-3xl font-black mt-2 text-red-600">${d7Count}건</p>
+                        </div>
+                        <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition border-l-4 border-l-amber-500">
+                            <p class="text-xs font-bold text-slate-400 flex items-center"><i data-lucide="bell-ring" class="w-3.5 h-3.5 mr-1 text-amber-500"></i> 30일 이내 임박</p>
+                            <p class="text-3xl font-black mt-2 text-amber-600">${d30Count}건</p>
+                        </div>
+                        <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition border-l-4 border-l-slate-400 col-span-2 lg:col-span-1">
+                            <p class="text-xs font-bold text-slate-400 flex items-center"><i data-lucide="x-circle" class="w-3.5 h-3.5 mr-1 text-slate-400"></i> 기한 완전 만료</p>
+                            <p class="text-3xl font-black mt-2 text-slate-600">${expiredCount}건</p>
+                        </div>
+                    </div>
+
+                    <!-- 대시보드 통계 차트 그리드 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col h-80">
+                            <h4 class="text-xs font-black text-slate-700 mb-3 flex items-center"><i data-lucide="pie-chart" class="w-4 h-4 mr-1 text-slate-500"></i> 브랜드별 보건증 현황</h4>
+                            <div class="flex-1 relative flex items-center justify-center">
+                                <canvas id="brandChart" class="max-h-full max-w-full"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col h-80">
+                            <h4 class="text-xs font-black text-slate-700 mb-3 flex items-center"><i data-lucide="bar-chart-3" class="w-4 h-4 mr-1 text-slate-500"></i> 만료 예정 인원 (D-30 이내)</h4>
+                            <div class="flex-1 relative flex items-center justify-center">
+                                <canvas id="expireChart" class="max-h-full max-w-full"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col h-80">
+                            <h4 class="text-xs font-black text-slate-700 mb-3 flex items-center"><i data-lucide="trending-up" class="w-4 h-4 mr-1 text-slate-500"></i> 월별 보건증 진단(등록) 추이</h4>
+                            <div class="flex-1 relative flex items-center justify-center">
+                                <canvas id="monthlyChart" class="max-h-full max-w-full"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 검색 조건 설정 및 다운로드 영역 -->
+                    <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-extrabold text-slate-500 tracking-wider">브랜드명 검색</label>
+                                <div class="relative">
+                                    <input type="text" id="searchBrandInput" value="${filters.searchBrand}" 
+                                        oninput="applyFilters()" 
+                                        placeholder="식당명 입력" 
+                                        class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs focus:outline-none focus:bg-white focus:border-[#E30613] font-bold">
+                                    <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400"></i>
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-extrabold text-slate-500 tracking-wider">근무자명 검색</label>
+                                <div class="relative">
+                                    <input type="text" id="searchNameInput" value="${filters.searchName}" 
+                                        oninput="applyFilters()" 
+                                        placeholder="직원 이름 입력" 
+                                        class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs focus:outline-none focus:bg-white focus:border-[#E30613] font-bold">
+                                    <i data-lucide="user" class="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400"></i>
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-extrabold text-slate-500 tracking-wider">상태별 필터</label>
+                                <select onchange="filters.status = this.value; applyFilters();" 
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:bg-white focus:border-[#E30613] font-bold">
+                                    ${['전체', '정상', '만료예정', '만료'].map(s => `<option value="${s}" ${filters.status === s ? 'selected' : ''}>${s} 리스트 보기</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-extrabold text-slate-500 tracking-wider">리스트 정렬</label>
+                                <select onchange="filters.sort = this.value; applyFilters();" 
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:bg-white focus:border-[#E30613] font-bold">
+                                    ${['유효기간', '브랜드', '이름', '등록일'].map(o => `<option value="${o}" ${filters.sort === o ? 'selected' : ''}>${o} 정렬</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 pt-3 border-t border-slate-100">
+                            <span class="text-xs font-bold text-slate-500 flex items-center">
+                                <i data-lucide="filter" class="w-4 h-4 mr-1 text-slate-400"></i> 조건 만족 임직원 : <strong class="text-[#E30613] ml-1">${processedList.length}</strong>명
+                            </span>
+                            <button onclick="downloadExcel()" class="bg-emerald-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-emerald-700 transition flex items-center justify-center space-x-1.5 shadow-sm">
+                                <i data-lucide="download" class="w-4 h-4"></i> <span>Excel 다운로드</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 임직원 목록 테이블 (PC대응) 및 카드 (모바일대응) -->
+                    <div class="overflow-hidden border border-slate-200 rounded-3xl bg-white shadow-sm">
+                        <!-- 모바일 카드 목록 (md 미만 노출) -->
+                        <div class="block md:hidden divide-y divide-slate-100">
+                            ${processedList.length === 0 ? '<p class="p-8 text-center text-xs text-slate-400 font-medium">검색 또는 필터링 조건에 부합하는 보건증 명단이 없습니다.</p>' : ''}
+                            ${processedList.map(item => {
+                                const dday = calculateDDay(item.expiryDate);
+                                return `
+                                    <div class="p-4 space-y-3">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <div class="flex items-center space-x-1.5">
+                                                    <span class="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">${item.brand}</span>
+                                                    <span class="text-[10px] font-bold px-2 py-0.5 bg-red-50 text-[#E30613] rounded-md">${item.role}</span>
+                                                </div>
+                                                <h4 class="text-base font-extrabold text-slate-900 mt-2">${item.name} <span class="text-xs font-medium text-slate-400">(${item.gender})</span></h4>
+                                            </div>
+                                            <span class="text-xs font-extrabold px-2.5 py-1 rounded-lg border ${dday.color}">${dday.text}</span>
+                                        </div>
+                                        <div class="text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-xl space-y-1">
+                                            <p class="flex justify-between"><span>주민등록번호:</span> <b class="font-mono text-slate-700">${item.rrn}</b></p>
+                                            <p class="flex justify-between"><span>진단일자(유효기간):</span> <b class="font-mono text-slate-700">${item.regDate}</b></p>
+                                            <p class="flex justify-between"><span>갱신만료일:</span> <b class="font-mono text-red-600 font-bold">${item.expiryDate}</b></p>
+                                            <p class="flex justify-between"><span>판정결과:</span> <b class="text-emerald-600">${item.result}</b></p>
+                                        </div>
+                                        <div class="flex justify-end pt-1">
+                                            <button onclick="viewOriginalImage(${item.id})" class="bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-slate-800 transition flex items-center">
+                                                <i data-lucide="eye" class="w-3.5 h-3.5 mr-1"></i> 원본 열람
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+
+                        <!-- PC 테이블 목록 (md 이상 노출) -->
+                        <div class="hidden md:block overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 text-[11px] font-extrabold text-slate-500 border-b border-slate-200 tracking-wider">
+                                        <th class="p-4 pl-6">브랜드</th>
+                                        <th class="p-4">이름</th>
+                                        <th class="p-4">직책</th>
+                                        <th class="p-4">성별</th>
+                                        <th class="p-4">주민번호</th>
+                                        <th class="p-4">판정결과</th>
+                                        <th class="p-4">진단일자(유효)</th>
+                                        <th class="p-4 text-red-600">만료예정일</th>
+                                        <th class="p-4">D-Day</th>
+                                        <th class="p-4 text-center pr-6">원본 확인</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-xs divide-y divide-slate-100 font-medium">
+                                    ${processedList.length === 0 ? '<tr><td colspan="10" class="p-8 text-center text-slate-400 font-bold">보건증 데이터가 비어 있습니다.</td></tr>' : ''}
+                                    ${processedList.map(item => {
+                                        const dday = calculateDDay(item.expiryDate);
+                                        return `
+                                            <tr class="hover:bg-slate-50/70 transition">
+                                                <td class="p-4 pl-6 font-extrabold text-slate-900">${item.brand}</td>
+                                                <td class="p-4 font-bold text-slate-800">${item.name}</td>
+                                                <td class="p-4 text-slate-500 font-bold">${item.role}</td>
+                                                <td class="p-4 text-slate-500">${item.gender}</td>
+                                                <td class="p-4 text-slate-500 font-mono tracking-wider">${item.rrn}</td>
+                                                <td class="p-4"><span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-bold border border-emerald-200">${item.result}</span></td>
+                                                <td class="p-4 text-slate-500 font-mono">${item.regDate}</td>
+                                                <td class="p-4 text-red-600 font-bold font-mono">${item.expiryDate}</td>
+                                                <td class="p-4"><span class="text-[10px] font-extrabold px-2.5 py-1 rounded-md border ${dday.color}">${dday.text}</span></td>
+                                                <td class="p-4 text-center pr-6">
+                                                    <button onclick="viewOriginalImage(${item.id})" class="text-xs bg-slate-900 text-white px-3 py-1.5 rounded-xl hover:bg-slate-800 transition font-bold shadow-xs">
+                                                        열람
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 통계 차트 재렌더링 실행
+            renderCharts(processedList);
+        }
+
+        // 실시간 검색 조건 적용
+        function applyFilters() {
+            filters.searchBrand = document.getElementById('searchBrandInput').value;
+            filters.searchName = document.getElementById('searchNameInput').value;
+            
+            // 대시보드 새로 그리기
+            renderAdminDashboardView(document.getElementById('main-content'));
+            lucide.createIcons();
+        }
+
+        /**
+         * ==========================================
+         * 4. 통계 시각화 및 차트 렌더링 (Chart.js 연동)
+         * ==========================================
+         */
+        function renderCharts(dataList) {
+            // 기존 차트 제거
+            if (charts.brand) charts.brand.destroy();
+            if (charts.expire) charts.expire.destroy();
+            if (charts.monthly) charts.monthly.destroy();
+
+            // 1. 브랜드별 등록 현황 집계
+            const brandCounts = {};
+            dataList.forEach(item => {
+                brandCounts[item.brand] = (brandCounts[item.brand] || 0) + 1;
+            });
+            const brandLabels = Object.keys(brandCounts);
+            const brandValues = Object.values(brandCounts);
+
+            // 2. 만료 예정 상태 분석 집계
+            let normal = 0, warning = 0, danger = 0, expired = 0;
+            dataList.forEach(item => {
+                const dday = calculateDDay(item.expiryDate);
+                if (dday.code === 'expired') expired++;
+                else if (['d0', 'd7'].includes(dday.code)) danger++;
+                else if (['d14', 'd30'].includes(dday.code)) warning++;
+                else normal++;
+            });
+
+            // 3. 월별 보건증 등록 추이 집계 (진단일자 기준)
+            const monthlyCounts = {};
+            dataList.forEach(item => {
+                if (item.regDate) {
+                    const month = item.regDate.substring(0, 7); // YYYY-MM
+                    monthlyCounts[month] = (monthlyCounts[month] || 0) + 1;
+                }
+            });
+            const monthlyLabels = Object.keys(monthlyCounts).sort();
+            const monthlyValues = monthlyLabels.map(m => monthlyCounts[m]);
+
+            // 브랜드 차트 생성
+            const ctxBrand = document.getElementById('brandChart').getContext('2d');
+            charts.brand = new Chart(ctxBrand, {
+                type: 'doughnut',
+                data: {
+                    labels: brandLabels,
+                    datasets: [{
+                        data: brandValues,
+                        backgroundColor: [
+                            '#E30613', '#F43F5E', '#FB7185', '#FDA4AF', '#FECDD3', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } }
+                    }
+                }
+            });
+
+            // 만료예정 차트 생성
+            const ctxExpire = document.getElementById('expireChart').getContext('2d');
+            charts.expire = new Chart(ctxExpire, {
+                type: 'bar',
+                data: {
+                    labels: ['만료완료', '임박(D-7)', '주의(D-30)', '정상'],
+                    datasets: [{
+                        label: '인원수',
+                        data: [expired, danger, warning, normal],
+                        backgroundColor: ['#64748B', '#EF4444', '#F59E0B', '#10B981'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            // 월별 등록 차트 생성
+            const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
+            charts.monthly = new Chart(ctxMonthly, {
+                type: 'line',
+                data: {
+                    labels: monthlyLabels.map(m => m.replace('-', '년 ') + '월'),
+                    datasets: [{
+                        label: '보건증 발급량',
+                        data: monthlyValues,
+                        borderColor: '#E30613',
+                        backgroundColor: 'rgba(227, 6, 19, 0.05)',
+                        fill: true,
+                        tension: 0.3,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        /**
+         * ==========================================
+         * 5. 브랜드 추가 및 삭제 로직
+         * ==========================================
+         */
+        function addBrand() {
+            const input = document.getElementById('newBrandInput');
+            const newBrand = input.value.trim();
+            if (!newBrand) {
+                alert("브랜드명을 올바르게 입력하십시오.");
+                return;
+            }
+            if (brands.includes(newBrand)) {
+                alert("이미 존재하는 식당가 브랜드입니다.");
+                return;
+            }
+            
+            brands.push(newBrand);
+            saveToStorage();
+            
+            alert(`[브랜드 추가 완료]\n\n${newBrand} 매장이 식당가 리스트에 추가되었습니다.`);
+            input.value = "";
+            renderAdminDashboardView(document.getElementById('main-content'));
+            lucide.createIcons();
+        }
+
+        function deleteBrand(brandName) {
+            // 해당 브랜드 소속 직원 수 체크
+            const staffCount = staffData.filter(s => s.brand === brandName).length;
+            let confirmMsg = `[${brandName}] 매장을 삭제하시겠습니까?`;
+            if (staffCount > 0) {
+                confirmMsg = `[경고] [${brandName}] 매장에 등록된 근무자가 ${staffCount}명 존재합니다.\n그래도 브랜드를 삭제하시겠습니까?`;
+            }
+
+            if (confirm(confirmMsg)) {
+                brands = brands.filter(b => b !== brandName);
+                saveToStorage();
+                renderAdminDashboardView(document.getElementById('main-content'));
+                lucide.createIcons();
+            }
+        }
+
+        /**
+         * ==========================================
+         * 6. 개인정보보호 준수 가상 원본 열람 & 모달 제어
+         * ==========================================
+         */
+        function viewOriginalImage(id) {
+            const item = staffData.find(d => d.id === id);
+            if (!item) return;
+
+            // 모달 내 증명서 항목에 데이터 바인딩
+            document.getElementById('modalName').innerText = item.name;
+            document.getElementById('modalRrn').innerText = item.rrn; // 뒷자리가 ******로 마스킹된 것만 노출
+            document.getElementById('modalBrand').innerText = item.brand;
+            document.getElementById('modalRole').innerText = item.role;
+            document.getElementById('modalGender').innerText = item.gender;
+            document.getElementById('modalResult').innerText = item.result;
+            document.getElementById('modalDiagDate').innerText = item.regDate;
+            document.getElementById('modalExpiryDate').innerText = item.expiryDate;
+
+            // 모달 열기
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.add('hidden');
+        }
+
+        /**
+         * ==========================================
+         * 7. 엑셀 다운로드 (SheetJS 활용)
+         * ==========================================
+         */
+        function downloadExcel() {
+            // Excel 파일로 변환할 테이블용 데이터 정합성 변환
+            const excelData = staffData.map(item => {
+                const dday = calculateDDay(item.expiryDate);
+                return {
+                    '브랜드': item.brand,
+                    '이름': item.name,
+                    '직책': item.role,
+                    '성별': item.gender,
+                    '주민등록번호(마스킹)': item.rrn,
+                    '판정결과': item.result,
+                    '진단일자': item.regDate,
+                    '만료예정일': item.expiryDate,
+                    'D-Day': dday.text
+                };
+            });
+            
+            // 워크시트 생성
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            
+            // 열 넓이 설정 자동화
+            const wscols = [
+                {wch: 15}, // 브랜드
+                {wch: 10}, // 이름
+                {wch: 12}, // 직책
+                {wch: 8},  // 성별
+                {wch: 18}, // 주민번호
+                {wch: 12}, // 판정결과
+                {wch: 12}, // 진단일자
+                {wch: 12}, // 만료일자
+                {wch: 10}  // D-Day
+            ];
+            worksheet['!cols'] = wscols;
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "보건증 관리현황");
+            
+            // 엑셀 파일 출력
+            const todayStr = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(workbook, `롯데몰_동부산점_식품위생_보건증_관리현황_${todayStr}.xlsx`);
+        }
+
+        /**
+         * ==========================================
+         * 8. 로그아웃 제어 및 애플리케이션 초기화 구동
+         * ==========================================
+         */
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            if (confirm("안전을 위해 관리자 모드에서 로그아웃 하시겠습니까?")) {
+                currentView = 'login';
+                router();
+            }
+        });
+
+        // 브라우저 첫 부팅 및 새로고침 시 초기 라우터 가동
+        window.onload = () => {
+            router();
+        };
+    </script>
+</body>
+</html>
